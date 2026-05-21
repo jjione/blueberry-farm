@@ -1014,15 +1014,37 @@ function _silentRefresh(){
   if($('page-records').classList.contains('active')){renderCalendar();renderDayDetail();}
 }
 
-// Firestore에서 초기 데이터 로드 후 앱 시작
+// 앱을 먼저 열고, Firestore 데이터는 뒤에서 동기화
 function _initApp(){
-  // 로딩 표시
+  // 로딩 표시는 길게 붙잡지 않음
   document.body.insertAdjacentHTML('afterbegin',
     '<div id="_loadingOverlay" style="position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px">'+
     '<div style="font-size:32px">🫐</div>'+
     '<div style="font-size:16px;font-weight:600;color:#4B3FBF">블루베리 농장</div>'+
     '<div style="font-size:14px;color:#66665F">데이터 불러오는 중...</div>'+
     '</div>');
+
+  let appStarted=false;
+  let syncStarted=false;
+
+  const renderApp=()=>{
+    initCalendar();renderDayDetail();renderHomeDashboard();calcSales();calcDelivery();updateDateBars();
+  };
+
+  const startApp=()=>{
+    if(appStarted)return;
+    appStarted=true;
+    const ov=document.getElementById('_loadingOverlay');
+    if(ov)ov.remove();
+    renderApp();
+    if(!syncStarted){
+      syncStarted=true;
+      _startFirestoreSync();
+    }
+  };
+
+  // 로컬 저장값으로 먼저 화면 표시: Firestore가 늦어도 0.8초 후 앱을 열어줌
+  const openTimer=setTimeout(startApp,800);
 
   _FARM_DOC().get().then(snap=>{
     if(snap.exists){
@@ -1034,10 +1056,13 @@ function _initApp(){
   }).catch(()=>{
     // 오프라인이면 localStorage로 계속 진행
   }).finally(()=>{
-    const ov=document.getElementById('_loadingOverlay');
-    if(ov)ov.remove();
-    _startFirestoreSync();
-    initCalendar();renderDayDetail();renderHomeDashboard();calcSales();calcDelivery();updateDateBars();
+    clearTimeout(openTimer);
+    if(appStarted){
+      // Firestore 데이터가 뒤늦게 도착하면 현재 화면만 조용히 갱신
+      renderApp();
+    }else{
+      startApp();
+    }
   });
 }
 
@@ -3216,7 +3241,7 @@ function renderBackupSummary(){
     `<div>👤 주소록: <strong>${addrTotal}명</strong></div>`+
     `<div>💾 데이터 크기: <strong>${kb}KB</strong></div>`+
     `<div style="margin-top:8px;padding-top:8px;border-top:.5px solid var(--border);color:${lastBackup==='없음'?'var(--red)':'var(--green-dark)'};font-weight:600">`+
-    `📦 마지막 백업: ${lastBackup==='없음'?'⚠️ 아직 백업한 적이 없어요':lastBackup}</div>`;
+    `📦 마지막 백업: ${lastBackup==='없음'?'⚠️ 아직 백업한 적 없어요':lastBackup}</div>`;
 }
 function exportBackup(){
   // 캐시 + localStorage 합산 (Firestore 동기화 데이터 포함)
