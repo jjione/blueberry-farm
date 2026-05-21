@@ -3216,7 +3216,7 @@ function renderBackupSummary(){
     `<div>👤 주소록: <strong>${addrTotal}명</strong></div>`+
     `<div>💾 데이터 크기: <strong>${kb}KB</strong></div>`+
     `<div style="margin-top:8px;padding-top:8px;border-top:.5px solid var(--border);color:${lastBackup==='없음'?'var(--red)':'var(--green-dark)'};font-weight:600">`+
-    `📦 마지막 백업: ${lastBackup==='없음'?'⚠️ 아직 백업한 적 없어요':lastBackup}</div>`;
+    `📦 마지막 백업: ${lastBackup==='없음'?'⚠️ 아직 백업한 적이 없어요':lastBackup}</div>`;
 }
 function exportBackup(){
   // 캐시 + localStorage 합산 (Firestore 동기화 데이터 포함)
